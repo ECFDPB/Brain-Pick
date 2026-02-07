@@ -1,6 +1,7 @@
 import cv2
 import time
 import csv
+import numpy as np
 from datetime import datetime
 from GazeTracking.gaze_tracking import GazeTracking
 from .attention_mapper import AttentionMapper
@@ -27,22 +28,41 @@ class AttentionTracker:
         """获取用户当前的注意力位置"""
         ret, frame = self.webcam.read()
         if not ret:
-            return None
+            return {
+                'username': self.username,
+                'timestamp': datetime.now().isoformat(),
+                'x_axis': np.nan,
+                'y_axis': np.nan
+            }
         # 处理帧
         self.gaze.refresh(frame)
-
+        if not self.gaze.pupils_located:  # 核心判断：瞳孔是否被识别
+            return {
+                'username': self.username,
+                'timestamp': datetime.now().isoformat(),
+                'x_axis': np.nan,
+                'y_axis': np.nan
+            }
+        # 跳过无效的眼睛检测 (比如眨眼时)
+        if self.gaze.is_blinking():
+             return {
+                'username': self.username,
+                'timestamp': datetime.now().isoformat(),
+                'x_axis': np.nan,
+                'y_axis': np.nan
+            }
         # 获取眼睛位置
         gaze_h = self.gaze.horizontal_ratio()
         gaze_v = self.gaze.vertical_ratio()
-
-        # 跳过无效的眼睛检测 (比如眨眼时)
-        if self.gaze.is_blinking():
+        if gaze_h is None or gaze_v is None:
             return {
-            'username': self.username,
-            'timestamp': datetime.now().isoformat(),
-            'x_axis': NaN,
-            'y_axis': NaN
-        }
+                'username': self.username,
+                'timestamp': datetime.now().isoformat(),
+                'x_axis': np.nan,
+                'y_axis': np.nan
+            }
+
+
 
         # 映射到屏幕位置
         screen_x, screen_y = self.mapper.predict(gaze_h, gaze_v)
@@ -73,8 +93,12 @@ class AttentionTracker:
             )
 
             # 写入表头
-            csv_writer.writeheader()
-            csv_file.flush()
+            csv_file.seek(0, 2)  # 移动到文件末尾
+            if csv_file.tell() == 0:
+                csv_writer = csv.DictWriter(csv_file, fieldnames=fieldnames)
+                csv_writer.writeheader()
+                csv_file.flush()
+            csv_writer = csv.DictWriter(csv_file, fieldnames=fieldnames)
 
 
             while True:
