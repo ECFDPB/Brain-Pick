@@ -1,0 +1,7 @@
+[project]
+name = "brain-pick"
+version = "0.1.0"
+description = "ETH Oxford 2026 Project - Utilising EEG and eye tracking to find the interest point within rich media contents."
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = []
