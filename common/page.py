@@ -9,6 +9,8 @@ class Tag:
 @dataclass
 class Element:
     id: int
+    x: float
+    y: float
     width: float
     height: float
     tags: list[Tag]

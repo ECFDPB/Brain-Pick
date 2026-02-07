@@ -22,6 +22,7 @@
           dlib
 
           flask
+          flask-httpauth
         ];
 
         nativeBuildInputs = with pkgs; [
