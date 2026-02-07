@@ -81,51 +81,48 @@ class AttentionTracker:
         interval = 1.0 / collection_rate
         last_collection_time = time.time()
         results_count = 0
+        is_running = True
 
         # 初始化 csv_file 变量
         csv_file = None
 
         try:
-            csv_file = open(output_file, 'w', newline='', encoding='utf-8')
-            csv_writer = csv.DictWriter(
-                csv_file,
-                fieldnames=['username', 'timestamp', 'x_axis', 'y_axis']
-            )
+            csv_file = open(output_file, 'a', newline='', encoding='utf-8')
+            fieldnames=['username', 'timestamp', 'x_axis', 'y_axis']
+            csv_writer = csv.DictWriter(csv_file, fieldnames=fieldnames)
+
 
             # 写入表头
             csv_file.seek(0, 2)  # 移动到文件末尾
             if csv_file.tell() == 0:
-                csv_writer = csv.DictWriter(csv_file, fieldnames=fieldnames)
                 csv_writer.writeheader()
                 csv_file.flush()
             csv_writer = csv.DictWriter(csv_file, fieldnames=fieldnames)
 
-
-            while True:
+            while is_running:
                 current_time = time.time()
 
                 # 检查是否到了采样时间
                 if current_time - last_collection_time >= interval:
                     result = self.get_attention_position()
-
                     if result is not None:
-                        # 写入 CSV 文件
                         csv_writer.writerow(result)
                         csv_file.flush()
                         results_count += 1
-
                     last_collection_time = current_time
 
-                # 显示实时视频
+                # 显示实时视频并检测ESC键
                 ret, frame = self.webcam.read()
                 if ret:
                     self.gaze.refresh(frame)
                     frame = self.gaze.annotated_frame()
-
                     cv2.imshow("Eye Tracking", frame)
 
-                    if cv2.waitKey(1) == 27:  # ESC 退出
-                        break
+                    # 检测ESC键（27是ESC的ASCII码），按下则终止循环
+                    key = cv2.waitKey(1) & 0xFF
+                    if key == 27:
+                        is_running = False  # 标记为停止
+                        break  # 退出循环
 
         except KeyboardInterrupt:
             print("\n\n追踪已停止")

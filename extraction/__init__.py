@@ -33,8 +33,7 @@ def run_tracking_continuous():
 def main():
     """主程序"""
     run_calibration()
-    while True:
-        run_tracking_continuous()
+    run_tracking_continuous()
 
 
 
