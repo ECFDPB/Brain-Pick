@@ -18,6 +18,9 @@ class Database:
         CREATE TABLE IF NOT EXISTS tags (
             id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT UNIQUE NOT NULL
         );
+        CREATE TABLE IF NOT EXISTS elements (
+            id INTEGER PRIMARY KEY AUTOINCREMENT, width REAL, height REAL
+        );
         CREATE TABLE IF NOT EXISTS tag_reports (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             username TEXT NOT NULL,
@@ -29,6 +32,13 @@ class Database:
             report_id INTEGER NOT NULL, tag_id INTEGER NOT NULL,
             PRIMARY KEY (report_id, tag_id),
             FOREIGN KEY(report_id) REFERENCES tag_reports(id),
+            FOREIGN KEY(tag_id) REFERENCES tags(id)
+        );
+        CREATE TABLE IF NOT EXISTS element_tags (
+            element_id INTEGER NOT NULL,
+            tag_id INTEGER NOT NULL,
+            PRIMARY KEY (element_id, tag_id),
+            FOREIGN KEY(element_id) REFERENCES elements(id) ON DELETE CASCADE,
             FOREIGN KEY(tag_id) REFERENCES tags(id)
         );
         """
