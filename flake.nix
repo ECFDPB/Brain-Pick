@@ -28,6 +28,8 @@
           python3Packages.python-lsp-server
           ruff
           uv
+
+          sqlite
         ];
       };
     };
