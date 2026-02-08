@@ -151,14 +151,12 @@ class AttentionTracker:
                     if result is not None:
                         tags = result["attention_tag"]
                         if isinstance(tags, list[Tag]):
-                            with open("data.csv", mode="r") as file:
+                            value = 0.0
+                            with open("eeeg/tags_report.csv", mode="r") as file:
                                 reader = csv.DictReader(file)
-                                for row in reader:
-                                    print(
-                                        f"User: {row['username']}, Score: {row['score']}"
-                                    )
+                                value = next(reader)["value"]
                             report = TagsReport(
-                                result["username"], result["timestamp"], tags, 0.0
+                                result["username"], result["timestamp"], tags, value
                             )
                         try:
                             requests.post(
