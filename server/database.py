@@ -7,6 +7,7 @@ from common.page import Element
 
 
 class Database:
+    # Create a new database
     def __init__(self, db_path="test.db"):
         self.db_path = db_path
         conn = sqlite3.connect(db_path)
@@ -99,6 +100,7 @@ class Database:
         result = [Element(**row) for row in rows]
         return result
 
+    # Get all reports associated with the username
     def get_all_reports(self, username):
         conn = sqlite3.connect(self.db_path)
         cursor = conn.cursor()

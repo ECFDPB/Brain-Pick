@@ -5,6 +5,7 @@ import logging
 from common.report import UserReport, ProtectedReport
 from server.database import Database
 
+# Connection properties
 address = "127.0.0.1"
 port = 8080
 
@@ -13,11 +14,13 @@ db = Database()
 app = Flask("brain-pick")
 
 
+# Stub route
 @app.route("/")
 def index():
     return "Welcome to Brain-Pick"
 
 
+# Get the all elements
 @app.route("/api/page", methods=["GET"])
 def page():
     elements = db.get_all_elements()
@@ -33,6 +36,7 @@ def get_report(username):
     return jsonify(data)
 
 
+# Verify password for business users
 @auth.verify_password
 def verify_business_user(username, password):
     return db.check_business_password(username, password)
@@ -49,6 +53,7 @@ def get_protected_report(username):
     return jsonify(data)
 
 
+# The endpoint for clients to submit reports
 @app.route("/api/report", methods=["POST"])
 def submit_report():
     json = request.get_json()

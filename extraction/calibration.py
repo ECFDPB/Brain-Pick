@@ -5,27 +5,27 @@ from GazeTracking.gaze_tracking import GazeTracking
 
 
 class CalibrationData:
-    """存储校准数据"""
-
     def __init__(self):
-        self.calibration_points = []  # 存储校准点数据
+        self.calibration_points = []
 
     def add_point(self, gaze_data, screen_x, screen_y):
-        """添加一个校准点"""
-        self.calibration_points.append({
-            'gaze_horizontal_ratio': gaze_data['horizontal_ratio'],
-            'gaze_vertical_ratio': gaze_data['vertical_ratio'],
-            'screen_x': screen_x,
-            'screen_y': screen_y
-        })
+        """Add one calibration point"""
+        self.calibration_points.append(
+            {
+                "gaze_horizontal_ratio": gaze_data["horizontal_ratio"],
+                "gaze_vertical_ratio": gaze_data["vertical_ratio"],
+                "screen_x": screen_x,
+                "screen_y": screen_y,
+            }
+        )
 
-    def save_calibration(self, filename='calibration_data.npy'):
-        """保存校准数据"""
+    def save_calibration(self, filename="calibration_data.npy"):
+        """Save the calibration data"""
         np.save(filename, np.array(self.calibration_points))
 
 
 class CalibrationUI:
-    """校准用户界面"""
+    """UI for calibration"""
 
     def __init__(self, screen_width=1280, screen_height=720):
         self.screen_width = screen_width
@@ -37,20 +37,19 @@ class CalibrationUI:
         self.calibration_data = CalibrationData()
 
     def draw_calibration_point(self, frame, x, y, radius=30, color=(0, 0, 255)):
-        """在框架上绘制校准点"""
+        """Draw hint on the UI"""
         cv2.circle(frame, (int(x), int(y)), radius, color, -1)
         cv2.circle(frame, (int(x), int(y)), radius, (255, 255, 255), 2)
         return frame
 
     def run_calibration(self, target_frames=10, sample_time=3.0, wait_time=1.0):
-        """运行校准流程"""
-        # 定义校准点 (标准化坐标: 0-1)
+        # Normalise coordinates
         calibration_points = [
             (0.5, 0.5, "CENTER"),
             (0.2, 0.2, "TOP-LEFT"),
             (0.8, 0.2, "TOP-RIGHT"),
             (0.2, 0.8, "BOTTOM-LEFT"),
-            (0.8, 0.8, "BOTTOM-RIGHT")
+            (0.8, 0.8, "BOTTOM-RIGHT"),
         ]
 
         window_name = "Calibration"
@@ -58,12 +57,10 @@ class CalibrationUI:
         cv2.resizeWindow(window_name, self.screen_width, self.screen_height)
 
         for norm_x, norm_y, label in calibration_points:
-            # 计算像素坐标
+            # Calculate pixel coordinates
             pixel_x = norm_x * self.screen_width
             pixel_y = norm_y * self.screen_height
 
-            """准备阶段"""
-            # 让用户看向红点，但还不收集数据
             preparation_start = time.time()
             while time.time() - preparation_start < sample_time:
                 ret, frame = self.webcam.read()
@@ -71,7 +68,6 @@ class CalibrationUI:
                     continue
                 self.gaze.refresh(frame)
 
-                # 显示准备界面（蓝色点）
                 frame_display = cv2.flip(frame, 1)
                 frame_display = self.draw_calibration_point(
                     frame_display, pixel_x, pixel_y, radius=50, color=(255, 0, 0)
@@ -80,20 +76,33 @@ class CalibrationUI:
                 elapsed = time.time() - preparation_start
                 remaining = sample_time - elapsed
 
-                cv2.putText(frame_display, f"Preparing: {label}", (50, 50),
-                            cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 0, 0), 2)
-                cv2.putText(frame_display, f"Time: {remaining:.1f}s", (50, 100),
-                            cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 0, 0), 2)
+                cv2.putText(
+                    frame_display,
+                    f"Preparing: {label}",
+                    (50, 50),
+                    cv2.FONT_HERSHEY_SIMPLEX,
+                    1,
+                    (255, 0, 0),
+                    2,
+                )
+                cv2.putText(
+                    frame_display,
+                    f"Time: {remaining:.1f}s",
+                    (50, 100),
+                    cv2.FONT_HERSHEY_SIMPLEX,
+                    1,
+                    (255, 0, 0),
+                    2,
+                )
 
                 cv2.imshow("Calibration", frame_display)
 
-                if cv2.waitKey(1) == 27:  # ESC 退出
+                if cv2.waitKey(1) == 27:
                     self.webcam.release()
                     cv2.destroyAllWindows()
                     return False
 
-            """采集数据阶段"""
-            # 正式收集眼睛数据
+            """Data collection"""
             collected_frames = 0
 
             while collected_frames < target_frames:
@@ -102,36 +111,46 @@ class CalibrationUI:
                     continue
                 self.gaze.refresh(frame)
 
-                # 现在收集数据（只有检测到瞳孔才收集）
                 if self.gaze.pupils_located:
                     gaze_data = {
-                        'horizontal_ratio': self.gaze.horizontal_ratio(),
-                        'vertical_ratio': self.gaze.vertical_ratio()
+                        "horizontal_ratio": self.gaze.horizontal_ratio(),
+                        "vertical_ratio": self.gaze.vertical_ratio(),
                     }
                     self.calibration_data.add_point(gaze_data, norm_x, norm_y)
                     collected_frames += 1
 
-                # 显示采集界面（绿色点）
                 frame_display = cv2.flip(frame, 1)
                 frame_display = self.draw_calibration_point(
                     frame_display, pixel_x, pixel_y, radius=50, color=(0, 255, 0)
                 )
 
-                cv2.putText(frame_display, f"Collecting: {label}", (50, 50),
-                            cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
-                cv2.putText(frame_display, f"Progress: {collected_frames}/{target_frames}", (50, 100),
-                            cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
+                cv2.putText(
+                    frame_display,
+                    f"Collecting: {label}",
+                    (50, 50),
+                    cv2.FONT_HERSHEY_SIMPLEX,
+                    1,
+                    (0, 255, 0),
+                    2,
+                )
+                cv2.putText(
+                    frame_display,
+                    f"Progress: {collected_frames}/{target_frames}",
+                    (50, 100),
+                    cv2.FONT_HERSHEY_SIMPLEX,
+                    1,
+                    (0, 255, 0),
+                    2,
+                )
 
                 cv2.imshow("Calibration", frame_display)
 
-                if cv2.waitKey(1) == 27:  # ESC 退出
+                if cv2.waitKey(1) == 27:
                     self.webcam.release()
                     cv2.destroyAllWindows()
                     return False
 
-            """等待阶段"""
-            # 点之间的等待，给用户休息时间
-            print(f"{label} 完成，等待中...")
+            print(f"{label} Done, next...")
             wait_start = time.time()
 
             while time.time() - wait_start < wait_time:
@@ -140,16 +159,29 @@ class CalibrationUI:
                     continue
                 self.gaze.refresh(frame)
 
-                # 显示等待界面
                 frame_display = cv2.flip(frame, 1)
-                cv2.putText(frame_display, "Next point loading...", (50, 50),
-                            cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
-                cv2.putText(frame_display, f"{label} Completed", (50, 100),
-                            cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
+                cv2.putText(
+                    frame_display,
+                    "Next point loading...",
+                    (50, 50),
+                    cv2.FONT_HERSHEY_SIMPLEX,
+                    1,
+                    (0, 0, 255),
+                    2,
+                )
+                cv2.putText(
+                    frame_display,
+                    f"{label} Completed",
+                    (50, 100),
+                    cv2.FONT_HERSHEY_SIMPLEX,
+                    1,
+                    (0, 255, 0),
+                    2,
+                )
 
                 cv2.imshow("Calibration", frame_display)
 
-                if cv2.waitKey(1) == 27:  # ESC 退出
+                if cv2.waitKey(1) == 27:
                     self.webcam.release()
                     cv2.destroyAllWindows()
                     return False
@@ -160,13 +192,12 @@ class CalibrationUI:
         return True
 
     def release(self):
-        """释放资源"""
         if self.webcam:
             self.webcam.release()
 
 
 if __name__ == "__main__":
-    # 获取屏幕分辨率 (你可以根据自己的屏幕修改)
+    # Screen properties
     SCREEN_WIDTH = 1280
     SCREEN_HEIGHT = 720
 
@@ -174,3 +205,4 @@ if __name__ == "__main__":
     use_fullscreen = False
     calibration.run_calibration(target_frames=10, sample_time=3.0, wait_time=1.0)
     calibration.release()
+
