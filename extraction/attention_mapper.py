@@ -69,4 +69,3 @@ class AttentionMapper:
             return True
         except:
             return False
-

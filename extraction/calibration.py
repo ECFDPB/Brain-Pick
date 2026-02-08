@@ -205,4 +205,3 @@ if __name__ == "__main__":
     use_fullscreen = False
     calibration.run_calibration(target_frames=10, sample_time=3.0, wait_time=1.0)
     calibration.release()
-

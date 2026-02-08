@@ -6,6 +6,7 @@ import requests
 from datetime import datetime
 from GazeTracking.gaze_tracking import GazeTracking
 from .attention_mapper import AttentionMapper
+import csv
 
 from common.page import Element, Tag
 from common.report import TagsReport
@@ -150,7 +151,12 @@ class AttentionTracker:
                     if result is not None:
                         tags = result["attention_tag"]
                         if isinstance(tags, list[Tag]):
-                            # TODO: Dummy value
+                            with open("data.csv", mode="r") as file:
+                                reader = csv.DictReader(file)
+                                for row in reader:
+                                    print(
+                                        f"User: {row['username']}, Score: {row['score']}"
+                                    )
                             report = TagsReport(
                                 result["username"], result["timestamp"], tags, 0.0
                             )
