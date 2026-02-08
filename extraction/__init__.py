@@ -21,7 +21,7 @@ def run_calibration():
 def run_tracking_continuous():
     try:
         tracker = AttentionTracker("ecfdpb")
-        tracker.run_continuous_tracking(collection_rate=2, output_file="raw_data.csv")
+        tracker.run_continuous_tracking(collection_rate=2)
     except Exception as e:
         print(f"Error: {e}")
 

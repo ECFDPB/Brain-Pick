@@ -1,6 +1,5 @@
 import cv2
 import time
-import csv
 import json
 import numpy as np
 import requests
@@ -8,6 +7,10 @@ from datetime import datetime
 from GazeTracking.gaze_tracking import GazeTracking
 from .attention_mapper import AttentionMapper
 
+from common.page import Element, Tag
+from common.report import TagsReport
+
+API_URL = "http://localhost:8080"
 API_TIMEOUT = 2  # API Timeout in seconds
 
 
@@ -45,33 +48,13 @@ class AttentionTracker:
 
             # Validate data format
             if not isinstance(api_data, list):
-                print("API返回错误：非列表格式！")
+                print("API failure: not a list")
                 return None
             if len(api_data) == 0:
-                print("API返回错误：元素列表为空！")
+                print("API failure: empty elements")
                 return None
 
-            # Parse Element as (x_max/y_max)
-            screen_elements = []
-            required_attrs = ["x", "y", "length", "width", "tag"]
-            for elem in api_data:
-                # Validate integrity
-                if not all(attr in elem for attr in required_attrs):
-                    continue
-                # Cast to float
-                x = float(elem["x"])
-                y = float(elem["y"])
-                length = float(elem["length"])
-                width = float(elem["width"])
-                tag = elem["tag"].strip()  # Partition labels
-                x_max = x + length
-                y_max = y + width
-                # Filter out invalid elements
-                if x < 0 or y < 0 or x_max > 1 or y_max > 1:
-                    continue
-                screen_elements.append(
-                    {"x": x, "y": y, "x_max": x_max, "y_max": y_max, "tag": tag}
-                )
+            screen_elements = [Element.from_dict(item) for item in api_data]
             return screen_elements if screen_elements else None
 
         except requests.exceptions.Timeout:
@@ -93,10 +76,10 @@ class AttentionTracker:
             return np.nan
         for elem in self.screen_elements:
             if (
-                elem["x"] <= screen_x <= elem["x_max"]
-                and elem["y"] <= screen_y <= elem["y_max"]
+                elem.x <= screen_x <= elem.x + elem.width
+                and elem.y <= screen_y <= elem.y + elem.height
             ):
-                return elem["tag"]
+                return elem.tags
         return np.nan
 
     def get_attention_position(self):
@@ -142,7 +125,7 @@ class AttentionTracker:
             "attention_tag": self.match_elem_tag(screen_x, screen_y),
         }
 
-    def run_continuous_tracking(self, collection_rate=2, output_file="raw_data.csv"):
+    def run_continuous_tracking(self, collection_rate=2):
         api_url = "https://127.0.0.1"
         request_method = "GET"
         post_data = None
@@ -157,28 +140,27 @@ class AttentionTracker:
         interval = 1.0 / collection_rate
         last_collection_time = time.time()
         is_running = True
-        csv_file = None
 
         try:
-            csv_file = open(output_file, "a", newline="", encoding="utf-8")
-            fieldnames = ["username", "timestamp", "attention_tag"]
-            csv_writer = csv.DictWriter(csv_file, fieldnames=fieldnames)
-
-            csv_file.seek(0, 2)
-            if csv_file.tell() == 0:
-                csv_writer.writeheader()
-                csv_file.flush()
-
             while is_running:
                 current_time = time.time()
 
                 if current_time - last_collection_time >= interval:
                     result = self.get_attention_position()
                     if result is not None:
-                        tag = result["attention_tag"]
-                        if not (isinstance(tag, (int, float)) and np.isnan(tag)):
-                            csv_writer.writerow(result)
-                            csv_file.flush()
+                        tags = result["attention_tag"]
+                        if isinstance(tags, list[Tag]):
+                            # TODO: Dummy value
+                            report = TagsReport(
+                                result["username"], result["timestamp"], tags, 0.0
+                            )
+                        try:
+                            requests.post(
+                                f"{API_URL}/api/report",
+                                json=report.asdict(),
+                            )
+                        except Exception as e:
+                            print(f"Upload failed: {e}")
                     last_collection_time = current_time
 
                 ret, frame = self.webcam.read()
@@ -200,8 +182,6 @@ class AttentionTracker:
             # Release resources
             self.webcam.release()
             cv2.destroyAllWindows()
-            if csv_file is not None:
-                csv_file.close()
 
 
 if __name__ == "__main__":
@@ -214,4 +194,3 @@ if __name__ == "__main__":
 
     except Exception as e:
         print(f"Error: {e}")
-
