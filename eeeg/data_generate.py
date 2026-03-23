@@ -16,4 +16,5 @@ def create_test_data(num_samples=100, num_features=2548, csv_path="test_emotions
     return df
 
 
-test_df = create_test_data(num_samples=99, num_features=2548, csv_path="test_emotions_correct.csv")
+if __name__ == "__main__":
+    create_test_data(num_samples=99, num_features=2548, csv_path="test_emotions_correct.csv")

@@ -5,3 +5,9 @@
 __pycache__/
 *.npy
 *.png
+*.pkl
+
+# generated CSV outputs
+eeeg/tags_report.csv
+eeeg/training_set_predictions.csv
+eeeg/test_emotions*.csv
