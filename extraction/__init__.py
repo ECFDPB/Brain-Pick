@@ -1,5 +1,5 @@
 from .calibration import CalibrationUI
-from .tracker import AttentionTracker
+from .gaze_tracker import AttentionTracker
 from .attention_mapper import AttentionMapper
 import numpy as np
 
