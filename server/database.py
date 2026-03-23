@@ -1,22 +1,20 @@
 import sqlite3
-import datetime
+from datetime import datetime
 
 from common.report import UserReport
-from common.page import Tag
-from common.page import Element
+from common.page import Tag, Element
 
 
 class Database:
-    # Create a new database
     def __init__(self, db_path="test.db"):
         self.db_path = db_path
-        conn = sqlite3.connect(db_path)
-        conn.execute("PRAGMA foreign_keys = 1")
-        self.create_tables()
+        self._conn = sqlite3.connect(db_path, check_same_thread=False)
+        self._conn.execute("PRAGMA foreign_keys = 1")
+        self._conn.row_factory = sqlite3.Row
+        self._create_tables()
 
-    def create_tables(self):
-        conn = sqlite3.connect(self.db_path)
-        schema = """
+    def _create_tables(self):
+        self._conn.executescript("""
         CREATE TABLE IF NOT EXISTS users (
             username TEXT PRIMARY KEY, remark TEXT
         );
@@ -49,36 +47,25 @@ class Database:
         CREATE TABLE IF NOT EXISTS business_users (
             username TEXT PRIMARY KEY, token TEXT
         );
-        """
-        conn.executescript(schema)
-        conn.commit()
+        """)
+        self._conn.commit()
 
     def add_user(self, username, remark=""):
-        conn = sqlite3.connect(self.db_path)
         try:
-            conn.execute(
-                "INSERT INTO users (username, remark) VALUES (?, ?)",
-                (username, remark),
-            )
-            conn.commit()
+            self._conn.execute("INSERT INTO users (username, remark) VALUES (?, ?)", (username, remark))
+            self._conn.commit()
         except sqlite3.IntegrityError:
             print(f"User {username} already exists.")
 
     def add_report(self, report: UserReport):
-        username = report.username
-        timestamp = report.timestamp
-        tags = report.topic
-        value = report.value
-
-        conn = sqlite3.connect(self.db_path)
-        cursor = conn.cursor()
-
+        cursor = self._conn.cursor()
         cursor.execute(
             "INSERT INTO tag_reports (username, timestamp, value) VALUES (?, ?, ?)",
-            (username, timestamp, value),
+            (report.username, report.timestamp, report.value),
         )
         report_id = cursor.lastrowid
-        for tag_name in tags:
+
+        for tag_name in report.topic:
             cursor.execute("INSERT OR IGNORE INTO tags (name) VALUES (?)", (tag_name,))
             cursor.execute("SELECT id FROM tags WHERE name = ?", (tag_name,))
             tag_id = cursor.fetchone()[0]
@@ -87,25 +74,19 @@ class Database:
                 (report_id, tag_id),
             )
 
-        conn.commit()
-        print(f"Report {report_id} created for {username} with tags {tags}")
+        self._conn.commit()
+        print(f"Report {report_id} created for {report.username} with tags {report.topic}")
 
     def get_all_elements(self):
-        conn = sqlite3.connect(self.db_path)
-        conn.row_factory = sqlite3.Row
-        cursor = conn.cursor()
+        cursor = self._conn.cursor()
         cursor.execute("SELECT id, width, height, x, y FROM elements")
         rows = cursor.fetchall()
+        return [Element(id=row["id"], width=row["width"], height=row["height"], x=row["x"], y=row["y"], tags=[]) for row in rows]
 
-        result = [Element(**row) for row in rows]
-        return result
-
-    # Get all reports associated with the username
     def get_all_reports(self, username):
-        conn = sqlite3.connect(self.db_path)
-        cursor = conn.cursor()
-        sql = """
-            SELECT 
+        cursor = self._conn.cursor()
+        cursor.execute("""
+            SELECT
                 tr.id AS report_id,
                 tr.username,
                 tr.timestamp,
@@ -117,16 +98,12 @@ class Database:
             LEFT JOIN tags t ON rt.tag_id = t.id
             WHERE tr.username = ?
             ORDER BY tr.timestamp DESC
-        """
-
-        cursor.execute(sql, (username,))
+        """, (username,))
         rows = cursor.fetchall()
 
         reports_map = {}
-
         for row in rows:
             r_id = row["report_id"]
-
             if r_id not in reports_map:
                 try:
                     dt_obj = datetime.strptime(row["timestamp"], "%Y-%m-%d %H:%M:%S")
@@ -142,17 +119,13 @@ class Database:
                 )
 
             if row["tag_id"] is not None:
-                new_tag = Tag(id=row["tag_id"], name=row["tag_name"])
-                reports_map[r_id].topic.append(new_tag)
+                reports_map[r_id].topic.append(row["tag_name"])
 
         return list(reports_map.values())
 
     def check_business_password(self, username, password):
-        conn = sqlite3.connect(self.db_path)
-        cursor = conn.cursor()
-        cursor.execute(
-            "SELECT token FROM business_users WHERE username = ?", (username,)
-        )
+        cursor = self._conn.cursor()
+        cursor.execute("SELECT token FROM business_users WHERE username = ?", (username,))
         row = cursor.fetchone()
         if row and row["token"] == password:
             return username

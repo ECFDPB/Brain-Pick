@@ -1,12 +1,12 @@
 from dataclasses import dataclass
+from typing import List
 
-from page import Tag
+from common.page import Tag
 
 
 @dataclass
 class TagsReport:
     username: str
     timestamp: int
-    topic: list[Tag]
-    # Value will be a float number from -1.0 to 1.0, representing likeness.
-    value: float
+    topic: List[Tag]
+    value: float  # -1.0 to 1.0, represents likeness

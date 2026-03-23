@@ -5,7 +5,6 @@ import logging
 from common.report import UserReport, ProtectedReport
 from server.database import Database
 
-# Connection properties
 address = "127.0.0.1"
 port = 8080
 
@@ -14,13 +13,11 @@ db = Database()
 app = Flask("brain-pick")
 
 
-# Stub route
 @app.route("/")
 def index():
     return "Welcome to Brain-Pick"
 
 
-# Get the all elements
 @app.route("/api/page", methods=["GET"])
 def page():
     elements = db.get_all_elements()
@@ -28,7 +25,6 @@ def page():
     return jsonify(data)
 
 
-# This is the internal API for accessing user data
 @app.route("/api/internal/userdata/<username>", methods=["GET"])
 def get_report(username):
     reports = db.get_all_reports(username)
@@ -36,30 +32,27 @@ def get_report(username):
     return jsonify(data)
 
 
-# Verify password for business users
 @auth.verify_password
 def verify_business_user(username, password):
     return db.check_business_password(username, password)
 
 
-# This is the protected API for accessing user data for an authorised third party
-# The username is hidden to protect privacy
 @app.route("/api/userdata/<username>", methods=["GET"])
 @auth.login_required
 def get_protected_report(username):
     reports = db.get_all_reports(username)
-    protected_reports = [ProtectedReport(values=report.values) for report in reports]
+    protected_reports = [ProtectedReport(topic=r.topic, value=r.value) for r in reports]
     data = [report.asdict() for report in protected_reports]
     return jsonify(data)
 
 
-# The endpoint for clients to submit reports
 @app.route("/api/report", methods=["POST"])
 def submit_report():
-    json = request.get_json()
-    report = UserReport(**json)
-    logging.info("Got report for %s at %s", report.username, report.username)
+    data = request.get_json()
+    report = UserReport(**data)
+    logging.info("Got report for %s at %s", report.username, report.timestamp)
     db.add_report(report)
+    return jsonify({"status": "ok"}), 201
 
 
 if __name__ == "__main__":

@@ -140,7 +140,6 @@ def k_fold_train_subject_model(subject, data, labels, k=5):
         )
         fold_accuracies.append(max(history.history["val_accuracy"]))
 
-        # Plot training & validation accuracy and loss
         plt.figure(figsize=(10, 5))
         plt.subplot(1, 2, 1)
         plt.plot(history.history["accuracy"], label="Train")

@@ -9,7 +9,7 @@ from .attention_mapper import AttentionMapper
 import csv
 
 from common.page import Element, Tag
-from common.report import TagsReport
+from common.userdata import TagsReport
 
 API_URL = "http://localhost:8080"
 API_TIMEOUT = 2  # API Timeout in seconds
