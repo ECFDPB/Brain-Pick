@@ -46,7 +46,7 @@ def get_data(subject):
         )
     labels_aux = []
     for i in range(len(labels_current)):
-        for iteratie in range(j[i]):
+        for _ in range(j[i]):
             labels_aux.append(labels_current[i])
     labels_aux = shift_labels(labels_aux)
     return matrix_current, labels_aux
@@ -130,12 +130,13 @@ def extract_data(subject):
 
 def main():
     subject_ids = range(1, 25)
-    # De la subiectul 4 (subiectul 5 in chestionar) a fost eliminata categoria 24 (UNI)
-    # De la subiectul 13 (subiectul 14 in chestionar) a fost eliminata categoria 1
-    # De la subiectul 14 (subiectul 15 in chestionar) a fost eliminata categoria 1 si 3
-    # De la subiectul 16 (subiectul 16 in chestionar) a fost eliminata categoria 22
-    # De la subiectul 20 (subiectul 21 in chestionar) a fost eliminata categoria 28 si 29
-    # De la subiectul 22 (subiectul 23 in chestionar) a fost eliminata categoria 24 (UNI)
+    # Missing categories per subject (questionnaire numbering in parentheses):
+    # Subject 4  (Q5):  category 24 (UNI) removed
+    # Subject 13 (Q14): category 1 removed
+    # Subject 14 (Q15): categories 1 and 3 removed
+    # Subject 16 (Q16): category 22 removed
+    # Subject 20 (Q21): categories 28 and 29 removed
+    # Subject 22 (Q23): category 24 (UNI) removed
     for subject in subject_ids:
         data2, labels_category = extract_data(subject)
         data, labels = get_data(subject)
