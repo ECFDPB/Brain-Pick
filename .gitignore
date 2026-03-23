@@ -8,6 +8,7 @@ __pycache__/
 *.pkl
 
 # generated CSV outputs
+raw_data.csv
 eeeg/tags_report.csv
 eeeg/training_set_predictions.csv
 eeeg/test_emotions*.csv
