@@ -49,7 +49,20 @@ def get_protected_report(username):
 @app.route("/api/report", methods=["POST"])
 def submit_report():
     data = request.get_json()
-    report = UserReport(**data)
+    if not data:
+        return jsonify({"error": "empty body"}), 400
+    required = {"username", "timestamp", "topic", "value"}
+    if not required.issubset(data.keys()):
+        return jsonify({"error": f"missing fields: {required - data.keys()}"}), 400
+    try:
+        report = UserReport(
+            username=str(data["username"]),
+            timestamp=int(data["timestamp"]),
+            topic=list(data["topic"]),
+            value=float(data["value"]),
+        )
+    except (TypeError, ValueError) as e:
+        return jsonify({"error": f"invalid field types: {e}"}), 400
     logging.info("Got report for %s at %s", report.username, report.timestamp)
     db.add_report(report)
     return jsonify({"status": "ok"}), 201

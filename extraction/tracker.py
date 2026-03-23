@@ -127,11 +127,8 @@ class AttentionTracker:
         }
 
     def run_continuous_tracking(self, collection_rate=2):
-        api_url = "https://127.0.0.1"
-        request_method = "GET"
-        post_data = None
         self.screen_elements = self.fetch_elements_from_api(
-            api_url, request_method, post_data
+            f"{API_URL}/api/page"
         )
 
         # Validate list of Elements
@@ -150,21 +147,21 @@ class AttentionTracker:
                     result = self.get_attention_position()
                     if result is not None:
                         tags = result["attention_tag"]
-                        if isinstance(tags, list[Tag]):
+                        if isinstance(tags, list) and len(tags) > 0:
                             value = 0.0
                             with open("eeeg/tags_report.csv", mode="r") as file:
                                 reader = csv.DictReader(file)
-                                value = next(reader)["value"]
+                                value = float(next(reader)["value"])
                             report = TagsReport(
                                 result["username"], result["timestamp"], tags, value
                             )
-                        try:
-                            requests.post(
-                                f"{API_URL}/api/report",
-                                json=report.asdict(),
-                            )
-                        except Exception as e:
-                            print(f"Upload failed: {e}")
+                            try:
+                                requests.post(
+                                    f"{API_URL}/api/report",
+                                    json=report.asdict(),
+                                )
+                            except Exception as e:
+                                print(f"Upload failed: {e}")
                     last_collection_time = current_time
 
                 ret, frame = self.webcam.read()
