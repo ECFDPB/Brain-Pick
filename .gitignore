@@ -1,11 +1,15 @@
 .direnv/
 .envrc
 .idea/
+.DS_Store
 
 __pycache__/
 *.npy
 *.png
-*.pkl
+
+# runtime-generated files
+test.db
+attention_mapper.pkl
 
 # generated CSV outputs
 raw_data.csv
